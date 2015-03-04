@@ -62,3 +62,11 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+
+# SSB4455
+# =========================
+Demo/
+Assets/UnityVS
+Assets/UnityVS.meta
