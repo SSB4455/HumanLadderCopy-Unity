@@ -9,14 +9,17 @@ public class GroundControllerScript : MonoBehaviour
 {
 	Camera mainCamera;
 	public GameObject humanPrefab;
-	public float waitTime = 5;
+	public float waitTime = 2;
 	float waitShift;
+	float cameraMoveTime = 1;
+	float cameraMoveShift;
 	int status;
+	int ladderCount;
 
 	Transform nextHumanTrans;
-	List<Transform> humans;
+	public List<Transform> prepareHumans;
+	List<Transform> humans = new List<Transform>();
 	Vector3 nextHumanPosition;
-	Vector3 mosePosition;
 	Vector3 cameraPosition;
 	
 	
@@ -48,31 +51,19 @@ public class GroundControllerScript : MonoBehaviour
 				waitShift -= Time.deltaTime;
 				if (waitShift < 0)
 				{
-					status++;
-
-					float heightLimmmit = mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0)).origin.y;
-					if (nextHumanTrans != null && nextHumanTrans.position.y > heightLimmmit)
+					status = 2;
+					if (nextHumanTrans != null)
 					{
-						waitShift = 0;
-						nextHumanPosition.y += 2;
-						cameraPosition.y += 2;
-					} else {
-						waitShift = 2;
+						humans.Add(nextHumanTrans);
 					}
-				}
-				break;
-			case 1:
-				waitShift += Time.deltaTime;
-				if (waitShift > 1)
-				{
-					status++;
 					nextHumanTrans = (Instantiate(humanPrefab) as GameObject).transform;
 					nextHumanTrans.position = nextHumanPosition;
 					Rigidbody2D rigidbody2D = nextHumanTrans.GetComponent<Rigidbody2D>();
 					rigidbody2D.centerOfMass = new Vector2(0, 0.01f);
-					break;
 				}
-				mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, cameraPosition, waitShift / 1);
+				break;
+			case 1:
+				waitShift += Time.deltaTime;
 				break;
 			case 2:
 				nextHumanTrans.position = nextHumanPosition;
@@ -99,8 +90,34 @@ public class GroundControllerScript : MonoBehaviour
 				break;
 		}
 
-		mosePosition = Input.mousePosition;
-		//mosePosition.z = -100;
+
+		if (cameraMoveShift > cameraMoveTime)
+		{
+			float heightLimmmit = mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0)).origin.y;
+			float maxHeight = 0;
+			for (int i = 0; i < humans.Count; i++)
+			{
+				maxHeight = humans[i].position.y > maxHeight ? humans[i].position.y : maxHeight;
+			}
+
+			if (maxHeight > mainCamera.transform.position.y - 1f)
+			{
+				cameraMoveShift = 0;
+				cameraPosition.y = maxHeight + 1;
+			}
+			else if (maxHeight < mainCamera.transform.position.y - 3)
+			{
+				cameraMoveShift = 0;
+				cameraPosition.y = maxHeight + 1;
+			}
+		}
+		cameraMoveShift += Time.deltaTime;
+		float cameraMoveProgress = cameraMoveShift / cameraMoveTime;
+		if (cameraMoveProgress < 1)
+		{
+			mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, cameraPosition, cameraMoveProgress);
+			nextHumanPosition.y = cameraPosition.y + 3;
+		}
 
 
 		// exit
@@ -173,9 +190,10 @@ public class GroundControllerScript : MonoBehaviour
 	private GUIStyle fpsStyle;
 	private void OnGUI()
 	{
-		GUILayout.Label("Input.mousePosition = " + Input.mousePosition + "\nnextHumanPosition = " + nextHumanPosition
-			+ "\nScreen.currentResolution.height/2 = " + (Screen.currentResolution.height / 2)
-			+ "\nhalf screen Hight = " + mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0))
-			+ "\nScreenPointToRay = " + mainCamera.ScreenPointToRay(mosePosition), fpsStyle);
+		GUILayout.Label("Count = " + humans.Count
+			+ "Input.mousePosition = " + Input.mousePosition + "\nnextHumanPosition = " + nextHumanPosition
+			//+ "\nScreen.currentResolution.height/2 = " + (Screen.currentResolution.height / 2)
+			//+ "\nhalf screen Hight = " + mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0))
+			+ "\nScreenPointToRay = " + mainCamera.ScreenPointToRay(Input.mousePosition), fpsStyle);
 	}
 }
