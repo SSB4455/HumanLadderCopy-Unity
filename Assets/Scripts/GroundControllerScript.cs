@@ -9,10 +9,13 @@ public class GroundControllerScript : MonoBehaviour
 {
 	Camera mainCamera;
 	public GameObject humanPrefab;
+	public AudioSource touchSound;
+	public AudioSource fallSound;
+	public AudioSource missSound;
 	public float waitTime = 2;
 	float waitShift;
 	int status;
-	int ladderCount;
+	int ladderCount = -1;
 
 	Transform nextHumanTrans;
 	public List<Transform> prepareHumans;
@@ -69,6 +72,7 @@ public class GroundControllerScript : MonoBehaviour
 				if (Input.GetButtonDown("Fire1"))
 				{
 					status++;
+					touchSound.Play();
 				}
 				break;
 			case 3:		// 持续触摸或点击 调整位置 
@@ -79,6 +83,7 @@ public class GroundControllerScript : MonoBehaviour
 					nextHumanPosition.x = Camera.main.ScreenPointToRay(Input.mousePosition).origin.x;
 				} else {
 					status++;
+					fallSound.Play();
 				}
 				break;
 			case 4:		// 松手 放开 准备下一个human
@@ -94,20 +99,21 @@ public class GroundControllerScript : MonoBehaviour
 		for (int i = 0; i < humans.Count; i++)
 		{
 			maxHeight = humans[i].position.y > maxHeight ? humans[i].position.y : maxHeight;
-			if (humans[i].position.y < -4)
+			if (humans[i].position.y < -2)
 			{
 				humans[i].gameObject.SetActive(false);
 				prepareHumans.Add(humans[i]);
 				humans.RemoveAt(i--);
 				ladderCount--;
+				missSound.Play();
 			}
 		}
 
 		if (maxHeight > cameraPositionY)
 		{
-			cameraPositionY = maxHeight + 1;
+			cameraPositionY = maxHeight + 1.8f;
 		} else if (maxHeight < cameraPositionY - 2) {
-			cameraPositionY = maxHeight + 1;
+			cameraPositionY = maxHeight + 1.8f;
 		}
 		if (mainCamera.transform.position.y != cameraPositionY)
 		{
