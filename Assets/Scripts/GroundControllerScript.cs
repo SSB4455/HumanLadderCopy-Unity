@@ -11,8 +11,6 @@ public class GroundControllerScript : MonoBehaviour
 	public GameObject humanPrefab;
 	public float waitTime = 2;
 	float waitShift;
-	float cameraMoveTime = 1;
-	float cameraMoveShift;
 	int status;
 	int ladderCount;
 
@@ -20,7 +18,8 @@ public class GroundControllerScript : MonoBehaviour
 	public List<Transform> prepareHumans;
 	List<Transform> humans = new List<Transform>();
 	Vector3 nextHumanPosition;
-	Vector3 cameraPosition;
+	float cameraPositionY;
+	float cameraSpeed = 5;
 	
 	
 	
@@ -31,7 +30,7 @@ public class GroundControllerScript : MonoBehaviour
 		waitShift = 0;
 		nextHumanPosition = new Vector3(0, 3, 0);
 		mainCamera = Camera.main;
-		cameraPosition = mainCamera.transform.position;
+		cameraPositionY = mainCamera.transform.position.y;
 
 
 
@@ -62,17 +61,19 @@ public class GroundControllerScript : MonoBehaviour
 					rigidbody2D.centerOfMass = new Vector2(0, 0.01f);
 				}
 				break;
-			case 1:
+			case 1:		// 调整摄像机高度
 				waitShift += Time.deltaTime;
+
+				nextHumanTrans.position = nextHumanPosition;
 				break;
-			case 2:
+			case 2:		// 准备获取触摸或点击
 				nextHumanTrans.position = nextHumanPosition;
 				if (Input.GetButtonDown("Fire1"))
 				{
 					status++;
 				}
 				break;
-			case 3:
+			case 3:		// 持续触摸或点击 调整位置 
 				nextHumanTrans.position = nextHumanPosition;
 				//Debug.Log("Input.GetButton(\"Fire1\") = " + Input.GetButton("Fire1"));
 				if (Input.GetButton("Fire1"))
@@ -81,9 +82,8 @@ public class GroundControllerScript : MonoBehaviour
 				} else {
 					status++;
 				}
-
 				break;
-			case 4:
+			case 4:		// 松手 放开 准备下一个human
 				waitShift = waitTime;
 				nextHumanPosition.x = 0;
 				status = 0;
@@ -91,32 +91,31 @@ public class GroundControllerScript : MonoBehaviour
 		}
 
 
-		if (cameraMoveShift > cameraMoveTime)
+		//float heightLimmmit = mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0)).origin.y;
+		float maxHeight = 0;
+		for (int i = 0; i < humans.Count; i++)
 		{
-			float heightLimmmit = mainCamera.ScreenPointToRay(new Vector3(0, Screen.currentResolution.height / 2, 0)).origin.y;
-			float maxHeight = 0;
-			for (int i = 0; i < humans.Count; i++)
-			{
-				maxHeight = humans[i].position.y > maxHeight ? humans[i].position.y : maxHeight;
-			}
-
-			if (maxHeight > mainCamera.transform.position.y - 1f)
-			{
-				cameraMoveShift = 0;
-				cameraPosition.y = maxHeight + 1;
-			}
-			else if (maxHeight < mainCamera.transform.position.y - 3)
-			{
-				cameraMoveShift = 0;
-				cameraPosition.y = maxHeight + 1;
-			}
+			maxHeight = humans[i].position.y > maxHeight ? humans[i].position.y : maxHeight;
 		}
-		cameraMoveShift += Time.deltaTime;
-		float cameraMoveProgress = cameraMoveShift / cameraMoveTime;
-		if (cameraMoveProgress < 1)
+
+		if (maxHeight > cameraPositionY)
 		{
-			mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, cameraPosition, cameraMoveProgress);
-			nextHumanPosition.y = cameraPosition.y + 3;
+			//cameraMoveShift = 0;
+			cameraPositionY = maxHeight + 1;
+		} else if (maxHeight < cameraPositionY - 2) {
+			//cameraMoveShift = 0;
+			cameraPositionY = maxHeight + 1;
+		}
+		if (mainCamera.transform.position.y != cameraPositionY)
+		{
+			Debug.Log(Mathf.Sign(cameraPositionY - mainCamera.transform.position.y));
+			float direction = Mathf.Sign(cameraPositionY - mainCamera.transform.position.y);
+			mainCamera.transform.Translate(0, direction * Time.deltaTime * cameraSpeed, 0);
+			if (direction * (cameraPositionY - mainCamera.transform.position.y) < 0)
+			{
+				mainCamera.transform.position = new Vector3(0, cameraPositionY, -100);
+			}
+			nextHumanPosition.y = mainCamera.transform.position.y + 3;
 		}
 
 
